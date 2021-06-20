@@ -1,0 +1,47 @@
+# Linux build environment for CI
+
+FROM ubuntu:focal
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends  \
+      build-essential                           \
+      ca-certificates                           \
+      git                                       \
+      gnupg                                     \
+      python3                                   \
+      wget                                      \
+      # clang                                     \
+      # clang-format                              \
+      cmake                                     \
+      # llvm                                      \
+      libc++-dev                                \
+      libc++abi-dev                             \
+      libgtk-3-dev                              \
+      liblz4-dev                                \
+      libpthread-stubs0-dev                     \
+      libsdl2-dev                               \
+      libvulkan-dev                             \
+      libx11-dev                                \
+      libx11-xcb-dev                            \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -; \
+    echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main" > /etc/apt/sources.list.d/llvm-12.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      clang-12        \
+      clang-format-12 \
+      llvm-12         \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/clang-format-12 /usr/local/bin/clang-format
+
+ENV CC clang-12
+ENV CXX clang++-12
+ENV AR llvm-ar-12
