@@ -1,8 +1,16 @@
-# Linux build environment for CI
+# Linux and Android build environment for CI
 
 FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+ENV ANDROID_NDK_ROOT /opt/android-ndk
+ENV ANDROID_NDK_VERSION r23b
+
+
+#
+# GCC & Clang
+#
 
 RUN set -eux; \
     apt-get update; \
@@ -55,3 +63,26 @@ RUN set -eux; \
 		echo 'CC=gcc'; \
 		echo 'CXX=g++'; \
 	} > /gcc.env
+
+
+#
+# Android NDK
+#
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends  \
+      file                                      \
+      unzip                                     \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /tmp/android-ndk && \
+    cd /tmp/android-ndk && \
+    \
+    wget -q -O android-ndk.zip https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip && \
+    \
+    unzip -q android-ndk.zip && \
+    \
+    mv ./android-ndk-${ANDROID_NDK_VERSION} ${ANDROID_NDK_ROOT}
+RUN rm -rf /tmp/android-ndk
