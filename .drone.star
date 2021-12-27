@@ -8,7 +8,7 @@ def main(ctx):
     return [
         pipeline('2021-05-05'),
         pipeline('2021-06-21'),
-        pipeline('2021-09-29'),
+        pipeline('2022-01-01'),
     ]
 
 def pipeline(tag):
