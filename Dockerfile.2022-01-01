@@ -4,8 +4,11 @@ FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV ANDROID_NDK_ROOT /opt/android-ndk
-ENV ANDROID_NDK_VERSION r23b
+ARG LLVM_GPG_KEY="6084 F3CF 814B 57C1 CF12 EFD5 15CF 4D18 AF4F 7421"
+
+ENV ANDROID_NDK_ROOT=/opt/android-ndk
+ENV ANDROID_NDK_VERSION=r23b
+ARG ANDROID_NDK_SHA1=f47ec4c4badd11e9f593a8450180884a927c330d
 
 
 #
@@ -39,8 +42,13 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \
-    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -; \
-    echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" > /etc/apt/sources.list.d/llvm-13.list; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --keyserver keyserver.ubuntu.com --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/llvm.gpg --recv-keys "${LLVM_GPG_KEY}"; \
+    chmod +r /etc/apt/trusted.gpg.d/llvm.gpg; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME"; \
+    \
+    echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" > /etc/apt/sources.list.d/llvm.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
       clang-13        \
@@ -81,8 +89,8 @@ RUN mkdir /tmp/android-ndk && \
     cd /tmp/android-ndk && \
     \
     wget -q -O android-ndk.zip https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip && \
+    echo "${ANDROID_NDK_SHA1} android-ndk.zip" | sha1sum -c - && \
     \
     unzip -q android-ndk.zip && \
-    \
     mv ./android-ndk-${ANDROID_NDK_VERSION} ${ANDROID_NDK_ROOT}
 RUN rm -rf /tmp/android-ndk
