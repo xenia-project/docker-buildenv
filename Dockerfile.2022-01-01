@@ -29,6 +29,7 @@ RUN set -eux; \
       # clang-format                              \
       cmake                                     \
       # llvm                                      \
+      valgrind                                  \
       libc++-dev                                \
       libc++abi-dev                             \
       libgtk-3-dev                              \
