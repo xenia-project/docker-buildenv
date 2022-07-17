@@ -1,0 +1,98 @@
+# Linux and Android build environment for CI
+
+ARG UBUNTU_BASE=focal
+
+FROM ubuntu:${UBUNTU_BASE}
+
+ARG UBUNTU_BASE
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ARG LLVM_VERSION=14
+ARG LLVM_GPG_KEY="6084 F3CF 814B 57C1 CF12 EFD5 15CF 4D18 AF4F 7421"
+
+ENV ANDROID_NDK_ROOT=/opt/android-ndk
+ENV ANDROID_NDK_VERSION=r25
+ARG ANDROID_NDK_SHA1=9fce956edb6abd5aca42acf6bbfb21a90a67f75b
+
+
+#
+# GCC, Clang and other tools
+#
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends  \
+      build-essential                           \
+      ca-certificates                           \
+      cmake                                     \
+      file                                      \
+      g++                                       \
+      git                                       \
+      gnupg                                     \
+      mesa-vulkan-drivers                       \
+      ninja-build                               \
+      python3                                   \
+      unzip                                     \
+      valgrind                                  \
+      wget                                      \
+      libc++-dev                                \
+      libc++abi-dev                             \
+      libgtk-3-dev                              \
+      liblz4-dev                                \
+      libpthread-stubs0-dev                     \
+      libsdl2-dev                               \
+      libvulkan-dev                             \
+      libx11-dev                                \
+      libx11-xcb-dev                            \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --keyserver keyserver.ubuntu.com --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/llvm.gpg --recv-keys "${LLVM_GPG_KEY}"; \
+    chmod +r /etc/apt/trusted.gpg.d/llvm.gpg; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME"; \
+    \
+    echo "deb http://apt.llvm.org/${UBUNTU_BASE}/ llvm-toolchain-${UBUNTU_BASE}-${LLVM_VERSION} main" > /etc/apt/sources.list.d/llvm.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      clang-${LLVM_VERSION}        \
+      clang-format-${LLVM_VERSION} \
+      llvm-${LLVM_VERSION}         \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/clang-format-${LLVM_VERSION} /usr/local/bin/clang-format
+
+RUN set -eux; \
+  { \
+    echo "CC=clang-${LLVM_VERSION}"; \
+    echo "CXX=clang++-${LLVM_VERSION}"; \
+    echo "AR=llvm-ar-${LLVM_VERSION}"; \
+    # https://bugs.kde.org/show_bug.cgi?id=452758
+    echo "CFLAGS='-fdebug-default-version=4'"; \
+    echo "CXXFLAGS='-fdebug-default-version=4'"; \
+  } > /clang.env
+
+RUN set -eux; \
+  { \
+    echo "CC=gcc"; \
+    echo "CXX=g++"; \
+  } > /gcc.env
+
+
+#
+# Android NDK
+#
+
+RUN mkdir /tmp/android-ndk && \
+    cd /tmp/android-ndk && \
+    \
+    wget -q -O android-ndk.zip https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip && \
+    echo "${ANDROID_NDK_SHA1} android-ndk.zip" | sha1sum -c - && \
+    \
+    unzip -q android-ndk.zip && \
+    mv ./android-ndk-${ANDROID_NDK_VERSION} ${ANDROID_NDK_ROOT}
+RUN rm -rf /tmp/android-ndk
