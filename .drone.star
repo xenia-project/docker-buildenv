@@ -9,6 +9,7 @@ def main(ctx):
         pipeline('2021-05-05'),
         pipeline('2021-06-21'),
         pipeline('2022-01-01'),
+        pipeline('2022-07-15'),
     ]
 
 def pipeline(tag):
